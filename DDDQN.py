@@ -43,10 +43,12 @@ class DDDQN:
         self.device             = device
         self.n_action           = n_action
 
-        self.ckpt_dir           = os.path.join(ckpt_dir, env_id)
+        self.ckpt_dir           = os.path.abspath(os.path.join(ckpt_dir, env_id))
         if not os.path.exists(self.ckpt_dir):
             os.makedirs(self.ckpt_dir)
-        self.logs_dir           = os.path.join(logs_dir, env_id)
+        self.logs_dir           = os.path.abspath(os.path.join(logs_dir, env_id))
+        print(f'Models Directory: {self.ckpt_dir}'
+              f'Logs Directory: {self.logs_dir}')
         self.writer = SummaryWriter(self.logs_dir)
 
         self.batch_size = batch_size
