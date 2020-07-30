@@ -7,13 +7,13 @@ from datetime import datetime
 from itertools import count
 import gym
 import argparse
+from pprint import pprint
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
-
 from ExperienceReplay import ExperienceReplay, Transition
 from StackedStates import StackedStates
 from utils import get_state
@@ -60,8 +60,6 @@ class DDDQN:
         self.loss_func          = loss_func
         self.optimizer          = optimizer_func(self.online_net.parameters(), lr=lr)
 
-
-
     def __str__(self):
         return '|' + '----------' + '|\n' + \
                '|' + 'Online Net' + '|' + '\n' + \
@@ -93,7 +91,7 @@ class DDDQN:
             return torch.tensor([random.randrange(self.n_action)], device=self.device, dtype=torch.long).item()
 
     def load(self, path):
-        checkpoint = torch.load(path)
+        checkpoint = torch.load(path, map_location=self.device)
         self.online_net.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.target_net.load_state_dict(self.online_net.state_dict())
@@ -313,7 +311,7 @@ if __name__ == '__main__':
     parser.add_argument('--target_update_interval', '-tar_updt_int',            type=int,   default=10,
                         help='Target Network update interval')
     parser.add_argument('--save_model_interval', '-save_mdl_int',                type=int,   default=10,
-                        help='Online Network saveing interval')
+                        help='Online Network saving interval')
     parser.add_argument('--epsilon_start', '-eps_start',                        type=float, default=1.0,
                         help='Start value for Epsilon Greedy strategy')
     parser.add_argument('--epsilon_end', '-eps_end',                            type=float, default=0.01,
