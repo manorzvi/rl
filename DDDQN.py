@@ -7,6 +7,7 @@ from datetime import datetime
 from itertools import count
 import gym
 import argparse
+import time
 from pprint import pprint
 
 import torch
@@ -47,8 +48,8 @@ class DDDQN:
         if not os.path.exists(self.ckpt_dir):
             os.makedirs(self.ckpt_dir)
         self.logs_dir           = os.path.abspath(os.path.join(logs_dir, env_id))
-        print(f'Models Directory: {self.ckpt_dir}'
-              f'Logs Directory: {self.logs_dir}')
+        print(f'[I] - Models Directory: {self.ckpt_dir}\n'
+              f'[I] - Logs Directory: {self.logs_dir}')
         self.writer = SummaryWriter(self.logs_dir)
 
         self.batch_size = batch_size
@@ -91,11 +92,13 @@ class DDDQN:
             return torch.tensor([random.randrange(self.n_action)], device=self.device, dtype=torch.long).item()
 
     def load(self, path):
+        print('[I] Load Model ... ', end='')
         checkpoint = torch.load(path, map_location=self.device)
         self.online_net.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.target_net.load_state_dict(self.online_net.state_dict())
         self.target_net.eval()
+        print('Done.')
 
     def update_target(self):
         self.target_net.load_state_dict(self.online_net.state_dict())
@@ -183,7 +186,7 @@ class DDDQN:
 
         return loss.item()
 
-    def train(self, env, render=False, render_interval=10):
+    def train(self, env):
 
         for i_episode in range(self.episodes):
 
@@ -197,8 +200,6 @@ class DDDQN:
             actions = []
 
             for t in count():
-                if render and i_episode % render_interval == 0:
-                    env.render()
 
                 # Select and perform an action
                 action = self.select_action(state)
@@ -234,26 +235,49 @@ class DDDQN:
                           f'Total Reward: {sum(rewards)}.'
                           f'Avg Loss: {sum(losses) / len(losses)}.'
                           f'Action Entropy: {action_entropy}.')
-                    if render and i_episode % render_interval == 0:
-                        env.close()
                     break
 
             # Update the target network, copying all weights and biases in DQN
             if i_episode % self.target_update_interval == 0:
-                print('Update Traget Net ... ', end='')
+                print('[I] - Update Traget Net ... ', end='')
                 self.update_target()
                 print('Done.')
 
             if i_episode % self.save_model_interval == 0:
-                print('Save Model ... ', end='')
+                print('[I] - Save Model ... ', end='')
                 self.save(i_episode)
                 print('Done.')
 
         print('Complete')
 
-        print('Save Model ... ', end='')
+        print('[I] - Save Model ... ', end='')
         self.save(i_episode)
         print('Done.')
+
+    def play(self, env):
+
+        print(f'[I] - Set Online Net to evaluation mode ... ', end='')
+        self.online_net.eval()
+        print('Done.')
+
+        for i in range(5):
+
+            stackedstates = StackedStates()
+            env.reset()
+            state = get_state(env, stackedstates, self.device)
+
+            for t in count():
+                env.render()
+                # time.sleep(0.04)
+                with torch.no_grad():
+                    action = torch.argmax(self.online_net(state), dim=1).item()
+                _, reward, done, _ = env.step(action)
+                next_state = get_state(env, stackedstates, self.device)
+                state = next_state
+                print(t)
+                if done or t > 1000:
+                    env.close()
+                    break
 
 
 class DDDQNet(nn.Module):
@@ -328,12 +352,14 @@ if __name__ == '__main__':
                         help="path to models directory")
     parser.add_argument('--env_id', '-env_id',                                  type=str,   default='BreakoutNoFrameskip-v4',
                         help="OpenAI Gym Env ID")
-    parser.add_argument('--training', '-training',                              action='store_true', default=True,
-                        help='Training or playing')
-    parser.add_argument('--loading', '-loading',                                action='store_true', default=False,
-                        help='Load existing model')
     parser.add_argument('--path', '-path',                                      type=str,
                         help="Relative path to existing model")
+    parser.add_argument('--load', '-load',                                      action='store_true', default=False,
+                        help='Load existing model')
+    parser.add_argument('--play', '-play',                                      action='store_true', default=False,
+                        help='Play')
+    parser.add_argument('--train', '-train',                                    action='store_true', default=False,
+                        help='Train Model')
 
     args = parser.parse_args()
 
@@ -365,13 +391,17 @@ if __name__ == '__main__':
                   eps_start=args.epsilon_start, eps_end=args.epsilon_end, eps_decay=args.epsilon_decay,
                   lr=args.learning_rate, gamma=args.gamma, logs_dir=args.logs, ckpt_dir=args.models)
 
-    if args.loading:
+    if args.load:
         model.load(args.path)
 
     print(model)
 
-    model.exp_rep_pretrain(env)
+    if args.train:
+        model.exp_rep_pretrain(env)
 
-    model.train(env, render=False)
+        model.train(env)
+
+    if args.play:
+        model.play(env)
 
 
