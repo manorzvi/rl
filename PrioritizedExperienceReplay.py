@@ -171,7 +171,7 @@ class PER(object):
         """
         self.tree = SumTree(capacity)
 
-    def store(self, state, action, next_state, reward, done):
+    def push(self, state, action, next_state, reward, done):
         """
         Store a new experience in our tree
         Each new experience have a score of max_prority (it will be then improved when we use this exp to train our DDDQN)
@@ -222,7 +222,7 @@ class PER(object):
             """
             Experience that correspond to each value is retrieved
             """
-            index, priority, data = self.tree.get_leaf(value)
+            index, priority, experience = self.tree.get_leaf(value)
 
             # P(j)
             sampling_probabilities = priority / self.tree.total_priority
@@ -231,8 +231,6 @@ class PER(object):
             b_ISWeights[i, 0] = np.power(n * sampling_probabilities, -self.PER_b) / max_weight
 
             b_idx[i] = index
-
-            experience = [data]
 
             memory_b.append(experience)
 
