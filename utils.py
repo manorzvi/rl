@@ -3,8 +3,7 @@ import numpy as np
 import torch
 from StackedStates import StackedStates
 from itertools import count
-import random
-import math
+import argparse
 
 resize = T.Compose([T.ToPILImage(),
                     T.Grayscale(),
@@ -41,6 +40,49 @@ def interactive_play(env):
         if done or t > 1000:
             env.close()
             break
+
+
+def get_config():
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--experience_replay_capacity', '-exp_rep_cap',         type=int,   default=100000,
+                        help="Size of the Experience Replay Memory")
+    parser.add_argument('--experience_replay_pretrain_size', '-exp_rep_pre',    type=int,   default=100000,
+                        help="Size of experiences to store before the training begins")
+    parser.add_argument('--batch_size', '-bs',                                  type=int,   default=32)
+    parser.add_argument('--episodes_number', '-epi_num',                        type=int,   default=1000,
+                        help='Number of episodes to play')
+    parser.add_argument('--target_update_interval', '-tar_updt_int',            type=int,   default=10,
+                        help='Target Network update interval')
+    parser.add_argument('--save_model_interval', '-save_mdl_int',                type=int,   default=10,
+                        help='Online Network saving interval')
+    parser.add_argument('--epsilon_start', '-eps_start',                        type=float, default=1.0,
+                        help='Start value for Epsilon Greedy strategy')
+    parser.add_argument('--epsilon_end', '-eps_end',                            type=float, default=0.01,
+                        help='End value for Epsilon Greedy strategy')
+    parser.add_argument('--epsilon_decay', '-eps_decay',                        type=float, default=0.00001,
+                        help='Decay Rate for Epsilon Greedy strategy')
+    parser.add_argument('--learning_rate', '-lr',                               type=float, default=0.00025,
+                        help="Optimizer's Learning Rate")
+    parser.add_argument('--gamma', '-gamma',                                    type=float, default=0.99,
+                        help="Q Learning Discount Factor")
+    parser.add_argument('--logs', '-logs',                                      type=str,   default='logs',
+                        help="path to logs directory")
+    parser.add_argument('--models', '-models',                                  type=str,   default='models',
+                        help="path to models directory")
+    parser.add_argument('--env_id', '-env_id',                                  type=str,   default='BreakoutNoFrameskip-v4',
+                        help="OpenAI Gym Env ID")
+    parser.add_argument('--path', '-path',                                      type=str,
+                        help="Relative path to existing model")
+    parser.add_argument('--load', '-load',                                      action='store_true', default=False,
+                        help='Load existing model')
+    parser.add_argument('--play', '-play',                                      action='store_true', default=False,
+                        help='Play')
+    parser.add_argument('--train', '-train',                                    action='store_true', default=False,
+                        help='Train Model')
+
+    return parser
 
 
 if __name__ == '__main__':
