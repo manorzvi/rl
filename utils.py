@@ -2,6 +2,7 @@ import torchvision.transforms as T
 import numpy as np
 import torch
 from StackedStates import StackedStates
+from itertools import count
 import random
 import math
 
@@ -24,7 +25,22 @@ def get_state(env, stackedstates: StackedStates, device: torch.device) -> torch.
     return stackedstates().unsqueeze(0).to(device)
 
 
-epsilon_greedy_steps = 0
+def interactive_play(env):
+
+    print(f'[I] - Interactive play mode.')
+
+    env.reset()
+
+    for t in count():
+        env.render()
+        action = int(input('Choose action: '))
+        _, reward, done, info = env.step(action)
+
+        print('reward: {}, info: {}, done: {}'.format(reward, info, done))
+
+        if done or t > 1000:
+            env.close()
+            break
 
 
 if __name__ == '__main__':
@@ -33,7 +49,8 @@ if __name__ == '__main__':
     # from torchvision.utils import make_grid
 
     # game = 'BreakoutNoFrameskip-v4'
-    game = 'SpaceInvadersNoFrameskip-v4'
+    # game = 'SpaceInvadersNoFrameskip-v4'
+    game = 'BreakoutDeterministic-v4'
     env = gym.make(game)
 
     # if gpu is to be used
@@ -58,3 +75,5 @@ if __name__ == '__main__':
     fig.suptitle(f'{state.shape}')
     plt.tight_layout()
     plt.show()
+
+    interactive_play(env)
