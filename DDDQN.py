@@ -6,9 +6,6 @@ from scipy.stats import entropy
 from datetime import datetime
 from itertools import count
 import gym
-import argparse
-import time
-from pprint import pprint
 
 import torch
 import torch.nn as nn
@@ -17,10 +14,10 @@ import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 from ExperienceReplay import ExperienceReplay, Transition
 from StackedStates import StackedStates
-from utils import get_state
+from utils import get_state, get_config
 
 
-class DDDQN:
+class DDDQN(object):
 
     def __init__(self, h, w, n_action, device, env_id, loss_func, optimizer_func,
                  exp_rep_capacity=100000, exp_rep_pretrain_size=100000,
@@ -45,11 +42,16 @@ class DDDQN:
         self.n_action           = n_action
 
         self.ckpt_dir           = os.path.abspath(os.path.join(ckpt_dir, env_id))
+        self.logs_dir           = os.path.abspath(os.path.join(logs_dir, env_id))
+
         if not os.path.exists(self.ckpt_dir):
             os.makedirs(self.ckpt_dir)
-        self.logs_dir           = os.path.abspath(os.path.join(logs_dir, env_id))
+        if not os.path.exists(self.logs_dir):
+            os.makedirs(self.logs_dir)
+
         print(f'[I] - Models Directory: {self.ckpt_dir}\n'
               f'[I] - Logs Directory: {self.logs_dir}')
+
         self.writer = SummaryWriter(self.logs_dir)
 
         self.batch_size = batch_size
@@ -323,45 +325,7 @@ class DDDQNet(nn.Module):
 
 
 if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--experience_replay_capacity', '-exp_rep_cap',         type=int,   default=100000,
-                        help="Size of the Experience Replay Memory")
-    parser.add_argument('--experience_replay_pretrain_size', '-exp_rep_pre',    type=int,   default=100000,
-                        help="Size of experiences to store before the training begins")
-    parser.add_argument('--batch_size', '-bs',                                  type=int,   default=32)
-    parser.add_argument('--episodes_number', '-epi_num',                        type=int,   default=1000,
-                        help='Number of episodes to play')
-    parser.add_argument('--target_update_interval', '-tar_updt_int',            type=int,   default=10,
-                        help='Target Network update interval')
-    parser.add_argument('--save_model_interval', '-save_mdl_int',                type=int,   default=10,
-                        help='Online Network saving interval')
-    parser.add_argument('--epsilon_start', '-eps_start',                        type=float, default=1.0,
-                        help='Start value for Epsilon Greedy strategy')
-    parser.add_argument('--epsilon_end', '-eps_end',                            type=float, default=0.01,
-                        help='End value for Epsilon Greedy strategy')
-    parser.add_argument('--epsilon_decay', '-eps_decay',                        type=float, default=0.00001,
-                        help='Decay Rate for Epsilon Greedy strategy')
-    parser.add_argument('--learning_rate', '-lr',                               type=float, default=0.00025,
-                        help="Optimizer's Learning Rate")
-    parser.add_argument('--gamma', '-gamma',                                    type=float, default=0.99,
-                        help="Q Learning Discount Factor")
-    parser.add_argument('--logs', '-logs',                                      type=str,   default='logs',
-                        help="path to logs directory")
-    parser.add_argument('--models', '-models',                                  type=str,   default='models',
-                        help="path to models directory")
-    parser.add_argument('--env_id', '-env_id',                                  type=str,   default='BreakoutNoFrameskip-v4',
-                        help="OpenAI Gym Env ID")
-    parser.add_argument('--path', '-path',                                      type=str,
-                        help="Relative path to existing model")
-    parser.add_argument('--load', '-load',                                      action='store_true', default=False,
-                        help='Load existing model')
-    parser.add_argument('--play', '-play',                                      action='store_true', default=False,
-                        help='Play')
-    parser.add_argument('--train', '-train',                                    action='store_true', default=False,
-                        help='Train Model')
-
+    parser = get_config()
     args = parser.parse_args()
 
     print(args)
