@@ -269,12 +269,13 @@ class DDDQN:
             for t in count():
                 env.render()
                 # time.sleep(0.04)
+
                 with torch.no_grad():
                     action = torch.argmax(self.online_net(state), dim=1).item()
+
                 _, reward, done, _ = env.step(action)
-                next_state = get_state(env, stackedstates, self.device)
-                state = next_state
-                print(t)
+                state = get_state(env, stackedstates, self.device)
+
                 if done or t > 1000:
                     env.close()
                     break
