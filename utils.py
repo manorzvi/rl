@@ -33,7 +33,7 @@ def interactive_play(env):
     for t in count():
         env.render()
         action = int(input('Choose action: '))
-        _, reward, done, info = env.step(action)
+        state, reward, done, info = env.step(action)
 
         print('reward: {}, info: {}, done: {}'.format(reward, info, done))
 
@@ -92,8 +92,10 @@ if __name__ == '__main__':
 
     # game = 'BreakoutNoFrameskip-v4'
     # game = 'SpaceInvadersNoFrameskip-v4'
-    game = 'BreakoutDeterministic-v4'
+    # game = 'BreakoutDeterministic-v4'
+    game = 'CartPole-v0'
     env = gym.make(game)
+    env = env.unwrapped
 
     # if gpu is to be used
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -106,16 +108,16 @@ if __name__ == '__main__':
     stackedstates = StackedStates()
     env.reset()
 
-    fig, axs = plt.subplots(5, 5)
-    for i, ax in enumerate(axs.flat):
-        state = get_state(env, stackedstates, device)
-        _, _, _, _ = env.step(env.action_space.sample())
-
-        flat_state = torch.cat([state[0, x, :, :] for x in range(4)], dim=1)
-        ax.imshow(flat_state)
-        ax.set_title(i)
-    fig.suptitle(f'{state.shape}')
-    plt.tight_layout()
-    plt.show()
+    # fig, axs = plt.subplots(5, 5)
+    # for i, ax in enumerate(axs.flat):
+    #     state = get_state(env, stackedstates, device)
+    #     _, _, _, _ = env.step(env.action_space.sample())
+    #
+    #     flat_state = torch.cat([state[0, x, :, :] for x in range(4)], dim=1)
+    #     ax.imshow(flat_state)
+    #     ax.set_title(i)
+    # fig.suptitle(f'{state.shape}')
+    # plt.tight_layout()
+    # plt.show()
 
     interactive_play(env)
