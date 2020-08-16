@@ -93,9 +93,9 @@ class DDDQN(object):
         else:
             return torch.tensor([random.randrange(self.n_action)], device=self.device, dtype=torch.long).item()
 
-    def load(self, path):
+    def load(self, **kwargs):
         print('[I] Load Model ... ', end='')
-        checkpoint = torch.load(path, map_location=self.device)
+        checkpoint = torch.load(kwargs['path'], map_location=self.device)
         self.online_net.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.target_net.load_state_dict(self.online_net.state_dict())
@@ -103,15 +103,21 @@ class DDDQN(object):
         print('Done.')
 
     def update_target(self):
+        print('[I] - Update Traget Net ... ', end='')
         self.target_net.load_state_dict(self.online_net.state_dict())
+        print('Done.')
 
-    def save(self, episode):
+    def save(self, **kwargs):
         now = datetime.now()
+        model_name = os.path.join(self.ckpt_dir, f"episode-{kwargs['episode']}__{now.strftime('%m-%d-%y_%H:%M:%S')}.pt")
+        print(f'[I] Save Model {model_name} ... ', end='')
         torch.save({
-            'episode': episode,
+            'episode': kwargs['episode'],
             'model_state_dict': self.online_net.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
-        }, os.path.join(self.ckpt_dir, f'episode-{episode}__{now.strftime("%m-%d-%y_%H:%M:%S")}.pt'))
+        }, model_name)
+        print('Done.')
+        return model_name
 
     def exp_rep_pretrain(self, env):
         i = 0
@@ -241,20 +247,14 @@ class DDDQN(object):
 
             # Update the target network, copying all weights and biases in DQN
             if i_episode % self.target_update_interval == 0:
-                print('[I] - Update Traget Net ... ', end='')
                 self.update_target()
-                print('Done.')
 
             if i_episode % self.save_model_interval == 0:
-                print('[I] - Save Model ... ', end='')
-                self.save(i_episode)
-                print('Done.')
+                self.save(episode=i_episode)
 
         print('Complete')
 
-        print('[I] - Save Model ... ', end='')
-        self.save(i_episode)
-        print('Done.')
+        self.save(episode=i_episode)
 
     def play(self, env):
 
@@ -357,7 +357,7 @@ if __name__ == '__main__':
                   lr=args.learning_rate, gamma=args.gamma, logs_dir=args.logs, ckpt_dir=args.models)
 
     if args.load:
-        model.load(args.path)
+        model.load(path=args.path)
 
     print(model)
 
