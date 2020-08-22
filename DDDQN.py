@@ -59,6 +59,7 @@ class DDDQN(object):
         self.target_update_interval = target_update_interval
         self.save_model_interval = save_model_interval
         self.gamma = gamma
+        self.start_episode = 0
 
         self.loss_func          = loss_func
         self.optimizer          = optimizer_func(self.online_net.parameters(), lr=lr)
@@ -96,6 +97,7 @@ class DDDQN(object):
     def load(self, **kwargs):
         print('[I] Load Model ... ', end='')
         checkpoint = torch.load(kwargs['path'], map_location=self.device)
+        self.start_episode = checkpoint['episode']
         self.online_net.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.target_net.load_state_dict(self.online_net.state_dict())
@@ -196,7 +198,7 @@ class DDDQN(object):
 
     def train(self, env):
 
-        for i_episode in range(self.episodes):
+        for i_episode in range(self.start_episode, self.episodes):
 
             # Initialize the environment and state
             stackedstates = StackedStates()
