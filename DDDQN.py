@@ -6,6 +6,7 @@ from scipy.stats import entropy
 from datetime import datetime
 from itertools import count
 import gym
+import json
 
 import torch
 import torch.nn as nn
@@ -64,6 +65,14 @@ class DDDQN(object):
         self.loss_func          = loss_func
         self.optimizer          = optimizer_func(self.online_net.parameters(), lr=lr)
 
+        self.log_data = {'Epsilon_Greedy_Threshold' : [],
+                         'Mean_Q'                   : [],
+                         'Loss'                     : [],
+                         'Episode_Reward'           : [],
+                         'Action_Entropy'           : [],
+                         'Episode_Length'           : []
+                         }
+
     def __str__(self):
         return '|' + '----------' + '|\n' + \
                '|' + 'Online Net' + '|' + '\n' + \
@@ -86,6 +95,7 @@ class DDDQN(object):
         sample = random.random()
         eps_threshold = self.eps_end+(self.eps_start-self.eps_end)*math.exp(-self.steps_done*self.eps_decay)
         self.writer.add_scalar('Epsilon_Greedy_Threshold', eps_threshold, global_step=self.steps_done)
+        self.log_data['Epsilon_Greedy_Threshold'].append(eps_threshold)
         self.steps_done += 1
         if sample > eps_threshold:
             with torch.no_grad():
@@ -112,6 +122,8 @@ class DDDQN(object):
     def save(self, **kwargs):
         now = datetime.now()
         model_name = os.path.join(self.ckpt_dir, f"episode-{kwargs['episode']}__{now.strftime('%m-%d-%y_%H:%M:%S')}.pt")
+        logdata_name = os.path.join(self.logs_dir, f"episode-{kwargs['episode']}__{now.strftime('%m-%d-%y_%H:%M:%S')}.json")
+
         print(f'[I] Save Model {model_name} ... ', end='')
         torch.save({
             'episode': kwargs['episode'],
@@ -119,6 +131,12 @@ class DDDQN(object):
             'optimizer_state_dict': self.optimizer.state_dict(),
         }, model_name)
         print('Done.')
+
+        print(f'[I] Save Log Data {logdata_name} ... ', end='')
+        with open(logdata_name, 'w') as fout:
+            json.dump(self.log_data, fout)
+        print('Done.')
+
         return model_name
 
     def exp_rep_pretrain(self, env):
@@ -172,7 +190,8 @@ class DDDQN(object):
         # for each batch state according to policy_net
         Q_state_action = self.online_net(states).gather(1, actions)
 
-        self.writer.add_scalar('Mean Q', torch.mean(Q_state_action).detach().item(), global_step=self.steps_done)
+        self.writer.add_scalar('Mean_Q', torch.mean(Q_state_action).detach().item(), global_step=self.steps_done)
+        self.log_data['Mean_Q'].append(torch.mean(Q_state_action).detach().item())
 
         with torch.no_grad():
             # Use Policy Network to select the action to take at next_state (a') (action with the highest Q-value)
@@ -186,7 +205,7 @@ class DDDQN(object):
         loss = self.loss_func(Q_state_action, TD_target)
 
         self.writer.add_scalar('Loss', loss.item(), global_step=self.steps_done)
-
+        self.log_data['Loss'].append(loss.item())
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
@@ -237,9 +256,12 @@ class DDDQN(object):
 
                 if done:
                     action_entropy = entropy(np.histogram(actions, bins=self.n_action, density=True)[0])
-                    self.writer.add_scalar('Episode Reward', sum(rewards), global_step=i_episode)
-                    self.writer.add_scalar('Action Entropy', action_entropy, global_step=i_episode)
-                    self.writer.add_scalar('Episode Length', t, global_step=i_episode)
+                    self.writer.add_scalar('Episode_Reward', sum(rewards), global_step=i_episode)
+                    self.writer.add_scalar('Action_Entropy', action_entropy, global_step=i_episode)
+                    self.writer.add_scalar('Episode_Length', t, global_step=i_episode)
+                    self.log_data['Episode_Reward'].append(sum(rewards))
+                    self.log_data['Action_Entropy'].append(action_entropy)
+                    self.log_data['Episode_Length'].append(t)
                     print(f'Episode {i_episode} Done.'
                           f'Length: {t}.'
                           f'Total Reward: {sum(rewards)}.'

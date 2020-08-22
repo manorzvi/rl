@@ -4,6 +4,8 @@ import torch
 from StackedStates import StackedStates
 from itertools import count
 import argparse
+import json
+import matplotlib.pyplot as plt
 
 resize = T.Compose([T.ToPILImage(),
                     T.Grayscale(),
@@ -83,6 +85,31 @@ def get_config():
                         help='Train Model')
 
     return parser
+
+
+def load_logged_data(logdata : str):
+    with open(logdata) as json_file:
+        data = json.load(json_file)
+    return data
+
+
+def show_logged_data(logdata : str):
+    data = load_logged_data(logdata)
+    fig, axs = plt.subplots(6, 1)
+    axs[0].plot(list(range(len(data['Epsilon_Greedy_Threshold']))), data['Epsilon_Greedy_Threshold'])
+    axs[0].set_title('Epsilon Greedy Threshold')
+    axs[1].plot(list(range(len(data['Mean_Q']))), data['Mean_Q'])
+    axs[1].set_title('Mean Q')
+    axs[2].plot(list(range(len(data['Loss']))), data['Loss'])
+    axs[2].set_title('Loss')
+    axs[3].plot(list(range(len(data['Episode_Reward']))), data['Episode_Reward'])
+    axs[3].set_title('Episode Reward')
+    axs[4].plot(list(range(len(data['Action_Entropy']))), data['Action_Entropy'])
+    axs[4].set_title('Action Entropy')
+    axs[5].plot(list(range(len(data['Episode_Length']))), data['Episode_Length'])
+    axs[5].set_title('Episode Length')
+    plt.tight_layout()
+    plt.show()
 
 
 if __name__ == '__main__':
