@@ -107,7 +107,7 @@ class DDDQN(object):
     def load(self, **kwargs):
         print('[I] Load Model ... ', end='')
         checkpoint = torch.load(kwargs['path'], map_location=self.device)
-        self.start_episode = checkpoint['episode']
+        self.start_episode = int(checkpoint['episode'])
         self.online_net.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.target_net.load_state_dict(self.online_net.state_dict())
