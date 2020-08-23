@@ -256,7 +256,8 @@ class DDDQN(object):
 
                 # Perform one step of the optimization
                 loss = self.optimize()
-                losses.append(loss)
+                if loss is not None:
+                    losses.append(loss)
 
                 if done:
                     action_entropy = entropy(np.histogram(actions, bins=self.n_action, density=True)[0])
@@ -266,10 +267,10 @@ class DDDQN(object):
                     self.log_data['Episode_Reward'].append(sum(rewards))
                     self.log_data['Action_Entropy'].append(action_entropy)
                     self.log_data['Episode_Length'].append(t)
-                    print(f'Episode {i_episode} Done.'
-                          f'Length: {t}.'
-                          f'Total Reward: {sum(rewards)}.'
-                          f'Avg Loss: {sum(losses) / len(losses)}.'
+                    print(f'Episode {i_episode} Done.',
+                          f'Length: {t}.',
+                          f'Total Reward: {sum(rewards)}.',
+                          'Avg Loss: {}.'.format(sum(losses) / len(losses) if len(losses) != 0 else 0),
                           f'Action Entropy: {action_entropy}.')
                     break
 
