@@ -175,6 +175,10 @@ class DDDQN(object):
         print('Done.')
 
     def optimize(self):
+        if len(self.memory) < self.batch_size:
+            print('I - Experience Replay is too small. return.')
+            return
+        
         transitions = self.memory.sample(self.batch_size)
 
         batch = Transition(*zip(*transitions))
