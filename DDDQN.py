@@ -178,7 +178,7 @@ class DDDQN(object):
         if len(self.memory) < self.batch_size:
             print('I - Experience Replay is too small. return.')
             return
-        
+
         transitions = self.memory.sample(self.batch_size)
 
         batch = Transition(*zip(*transitions))
@@ -221,7 +221,7 @@ class DDDQN(object):
 
     def train(self, env):
 
-        for i_episode in range(self.start_episode, self.episodes):
+        for i_episode in range(self.start_episode, self.start_episode + self.episodes):
 
             # Initialize the environment and state
             stackedstates = StackedStates()
