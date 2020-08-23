@@ -39,7 +39,7 @@ def interactive_play(env):
 
         print('reward: {}, info: {}, done: {}'.format(reward, info, done))
 
-        if done or t > 1000:
+        if done:
             env.close()
             break
 
